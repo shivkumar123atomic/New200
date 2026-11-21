@@ -1,0 +1,13 @@
+<?php
+require __DIR__ . '/../config.php'; require_admin();
+$articles = db()->query('SELECT id,title,category,status,updated_at FROM articles ORDER BY updated_at DESC')->fetchAll();
+$total = count($articles); $published = count(array_filter($articles, fn($a) => $a['status'] === 'published'));
+?>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard — <?= e(SITE_NAME) ?></title><link rel="stylesheet" href="../assets/style.css"></head><body class="admin-bg">
+<header class="admin-top"><a class="brand" href="../index.php"><?= e(SITE_NAME) ?></a><div><a href="../index.php" target="_blank">View site ↗</a><a href="logout.php">Sign out</a></div></header>
+<main class="admin-wrap"><div class="admin-heading"><div><p class="eyebrow">CONTROL PANEL</p><h1>Your writing desk</h1><p class="muted">Hello, <?= e($_SESSION['admin_name'] ?? 'Admin') ?>. Here's your publication at a glance.</p></div><a class="btn" href="editor.php">＋ New story</a></div>
+<div class="stats"><div class="stat"><span>Total stories</span><strong><?= $total ?></strong></div><div class="stat"><span>Published</span><strong><?= $published ?></strong></div><div class="stat"><span>Drafts</span><strong><?= $total - $published ?></strong></div></div>
+<section class="panel"><div class="panel-head"><h2>All stories</h2><span class="muted"><?= $total ?> total</span></div>
+<?php if (!$articles): ?><div class="empty"><h3>No stories yet</h3><p>Create your first article to get started.</p></div><?php else: ?><div class="table-scroll"><table><thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead><tbody>
+<?php foreach ($articles as $a): ?><tr><td><strong><?= e($a['title']) ?></strong></td><td><?= e($a['category']) ?></td><td><span class="status <?= e($a['status']) ?>"><?= e(ucfirst($a['status'])) ?></span></td><td><?= date('M j, Y', strtotime($a['updated_at'])) ?></td><td class="actions"><a href="editor.php?id=<?= (int)$a['id'] ?>">Edit</a><?php if ($a['status']==='published'): ?><a href="../article.php?slug=<?= rawurlencode((string)db()->query('SELECT slug FROM articles WHERE id='.(int)$a['id'])->fetchColumn()) ?>" target="_blank">View</a><?php endif; ?><form method="post" action="delete.php" onsubmit="return confirm('Delete this story permanently?')"><input type="hidden" name="csrf" value="<?= e(csrf_token()) ?>"><input type="hidden" name="id" value="<?= (int)$a['id'] ?>"><button class="link-button danger" type="submit">Delete</button></form></td></tr><?php endforeach; ?>
+</tbody></table></div><?php endif; ?></section></main></body></html>
